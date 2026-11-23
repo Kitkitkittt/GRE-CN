@@ -41,7 +41,50 @@ The base above is an inspection snapshot, not a permanent working branch. Refres
 
 ## Verification starting point
 
-No executable acceptance command was established by this bounded source inspection. Read `README.md` and record the narrowest existing check before implementation. Do not invent a `test` command or infer that the repository has no tests from this gap. For a documentation-only task, check links, factual source anchors and whitespace; do not build unrelated application code.
+From the repository root, run this Git and Python 3 check on the tracked vocabulary and reading CSV exports. It accepts both `.csv` and `.CSV`, reads the legacy 佛脚词表 and 霍V5 exports as GB18030, and reads the other exports as UTF-8 (with or without a BOM). Each export must contain at least two CSV records and keep a consistent column count of at least three. Parse records, not physical lines: quoted definitions often span multiple lines, and blank cells are valid.
+
+```sh
+python3 -IBS - <<'PY'
+import csv
+import subprocess
+from pathlib import Path
+
+roots = ("L-GRE-词汇", "L-GRE-阅读")
+paths = subprocess.check_output(
+    ["git", "ls-files", "-z", "--", *roots], timeout=5,
+).decode("utf-8").split("\0")
+exports = sorted({Path(name) for name in paths if Path(name).suffix.lower() == ".csv"})
+if {path.parts[0] for path in exports} != set(roots):
+    raise SystemExit("Expected tracked vocabulary and reading CSV exports")
+
+root = Path.cwd()
+for path in exports:
+    if path.resolve() != root / path or not path.is_file():
+        raise SystemExit(f"{path}: expected a regular local CSV, not a symlink")
+    if path.stat().st_size > 1024 * 1024:
+        raise SystemExit(f"{path}: exceeds the 1 MiB offline check limit")
+    legacy = path.name == "L-GRE-佛脚词表.csv" or path.parent.name == "L-GRE-机经词汇-霍V5"
+    encoding = "gb18030" if legacy else "utf-8-sig"
+    count = 0
+    width = None
+    with path.open(encoding=encoding, newline="") as source:
+        rows = csv.reader(source, strict=True)
+        try:
+            for count, row in enumerate(rows, 1):
+                if width is None:
+                    width = len(row)
+                if width < 3 or len(row) != width or any("\0" in cell for cell in row):
+                    raise SystemExit(f"{path}: invalid columns in record {count} (line {rows.line_num})")
+        except (UnicodeError, csv.Error) as exc:
+            raise SystemExit(f"{path}: cannot parse {encoding} CSV near line {rows.line_num + 1}: {exc}")
+    if count < 2:
+        raise SystemExit(f"{path}: expected at least two CSV records")
+    print(f"{path}: {count} records, {width} columns")
+print(f"Checked {len(exports)} CSV exports.")
+PY
+```
+
+Expect exit 0 and a record/column count for each tracked export. This is a read-only structural check, not a check of answers, translations, or the README's historical file tree. It requires no downloads, LFS pulls, document viewers, archive extraction, spreadsheet evaluation, or execution of the batch file or linked code.
 
 ## Required handoff result
 
