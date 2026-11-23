@@ -1,0 +1,93 @@
+# Swarm-ready handoff
+
+Repository: `Kitkitkittt/GRE-CN`. Contract: `swarm-ready/v1`. Source inspection: 2026-11-23.
+Default branch: `master`. Inspected base: [884595b47c9f](https://github.com/Kitkitkittt/GRE-CN/commit/884595b47c9f88994d69c5096da907f7855f275a).
+
+**Status: documented; runtime qualification is unverified.** This file defines an agent workflow. It does not install a shell command, enroll the repository in a scheduler, certify test success, or activate VMs. Follow the current user task and existing repository instructions; retain prior authorization within its actual scope.
+
+## Invoke
+
+Give the working agent this prompt:
+
+```text
+swarm ready: <one measurable repository objective>
+Read SWARM_READY.md and the applicable AGENTS.md. Continue the current owned
+work or ready issue, establish the baseline and acceptance check, then prepare
+a bounded worker handoff. Use existing authorized tools and capacity. Report
+what is documented, implemented, tested, and observed separately.
+```
+
+If a `swarm-ready` skill is installed, load it. Otherwise execute the documented workflow directly. Treat the phrase as an agent instruction unless the installed CLI explicitly advertises it. Inspect help/version before using optional command adapters.
+
+## Repository starting point
+
+Read: [README.md](README.md).
+
+Continue an existing approved issue or a clearly scoped user objective after inspecting the source map below. If none is selected, return the smallest useful improvement and its verifier as the handoff; do not begin a portfolio-wide rewrite.
+
+Start with one writer. Add workers only for disjoint changes or independent experiments whose results can be checked separately. Keep shared interfaces and final integration with one owner.
+
+The base above is an inspection snapshot, not a permanent working branch. Refresh the actual target branch, current issues, incumbent worker and applicable nested instructions before editing. Preserve unrelated changes and upstream/fork boundaries.
+
+## Execution logic
+
+1. **Recover context.** Read the current issue, work order and last evidence-backed handoff. Keep useful work and the active worker. Record source commit, unresolved criteria and the next action; avoid repeating completed investigation.
+2. **Define success.** State one outcome, baseline, target, changed paths, verification command and expected result. Keep acceptance criteria and reference data fixed unless the user changes the requirement.
+3. **Bound the attempt.** Reuse the existing owner/task/attempt identities, action scope, resource limits, time/cost budget and retry allowance. Do not demand a new user-written permission receipt for already authorized work. If a real capability or grant is missing, name the exact blocked action and continue independent work.
+4. **Partition only useful work.** Use one writer per branch/worktree and non-overlapping change scope. Reuse the existing task ledger and dependency graph. Reserve verification capacity before adding workers; avoid recursive worker growth and duplicate coordinators.
+5. **Implement and measure.** Make the smallest coherent change. Use differential checks when a trusted reference exists, and deterministic failure simulation when it materially improves reproduction. Record the seed/configuration and counterexamples. Do not weaken tests, rewrite baselines or hide pre-existing failures to claim success.
+6. **Verify and integrate.** Verify the exact returned commit independently in a clean environment. Recheck the final integrated revision when changes interact. Follow existing review, merge and deployment rules; a green worker report alone cannot override them. Use the narrowest checks that resolve a concrete risk.
+7. **Checkpoint and finish.** Save candidate SHA, evidence, measured outcome, remaining blockers and a precise next action before context/lease expiry. Reconcile lost or duplicate completions before retrying. Release only the run's owned resources after preserving evidence. Stop when the requested outcome is met or a concrete blocker prevents the next required action.
+
+## Verification starting point
+
+From the repository root, run this Git and Python 3 check on the tracked vocabulary and reading CSV exports. It accepts both `.csv` and `.CSV`, reads the legacy 佛脚词表 and 霍V5 exports as GB18030, and reads the other exports as UTF-8 (with or without a BOM). Each export must contain at least two CSV records and keep a consistent column count of at least three. Parse records, not physical lines: quoted definitions often span multiple lines, and blank cells are valid.
+
+```sh
+python3 -IBS - <<'PY'
+import csv
+import subprocess
+from pathlib import Path
+
+roots = ("L-GRE-词汇", "L-GRE-阅读")
+paths = subprocess.check_output(
+    ["git", "ls-files", "-z", "--", *roots], timeout=5,
+).decode("utf-8").split("\0")
+exports = sorted({Path(name) for name in paths if Path(name).suffix.lower() == ".csv"})
+if {path.parts[0] for path in exports} != set(roots):
+    raise SystemExit("Expected tracked vocabulary and reading CSV exports")
+
+root = Path.cwd()
+for path in exports:
+    if path.resolve() != root / path or not path.is_file():
+        raise SystemExit(f"{path}: expected a regular local CSV, not a symlink")
+    if path.stat().st_size > 1024 * 1024:
+        raise SystemExit(f"{path}: exceeds the 1 MiB offline check limit")
+    legacy = path.name == "L-GRE-佛脚词表.csv" or path.parent.name == "L-GRE-机经词汇-霍V5"
+    encoding = "gb18030" if legacy else "utf-8-sig"
+    count = 0
+    width = None
+    with path.open(encoding=encoding, newline="") as source:
+        rows = csv.reader(source, strict=True)
+        try:
+            for count, row in enumerate(rows, 1):
+                if width is None:
+                    width = len(row)
+                if width < 3 or len(row) != width or any("\0" in cell for cell in row):
+                    raise SystemExit(f"{path}: invalid columns in record {count} (line {rows.line_num})")
+        except (UnicodeError, csv.Error) as exc:
+            raise SystemExit(f"{path}: cannot parse {encoding} CSV near line {rows.line_num + 1}: {exc}")
+    if count < 2:
+        raise SystemExit(f"{path}: expected at least two CSV records")
+    print(f"{path}: {count} records, {width} columns")
+print(f"Checked {len(exports)} CSV exports.")
+PY
+```
+
+Expect exit 0 and a record/column count for each tracked export. This is a read-only structural check, not a check of answers, translations, or the README's historical file tree. It requires no downloads, LFS pulls, document viewers, archive extraction, spreadsheet evaluation, or execution of the batch file or linked code.
+
+## Required handoff result
+
+Return a concise record with `repository`, `objective`, `issue_or_work_order`, `base_sha`, `candidate_sha`, `owner`, `task_id`, `attempt_id`, `worker/session`, `branch/worktree`, `changed_paths`, `environment`, `resource/budget limits`, `acceptance`, `commands_and_results`, `evidence_refs`, `known_failures`, `blocker_owner`, `next_action`, and `cleanup_status`. Use null/unknown when a field is unavailable; never manufacture evidence or authority.
+
+Keep documentation readiness, command availability, source tests, live environment qualification and accepted outcome as separate states. Count verified outcomes, regressions, elapsed time, cost and human interventions. Commits, lines, tokens and worker count describe activity only.

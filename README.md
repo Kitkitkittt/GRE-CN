@@ -3,6 +3,8 @@
 
 [Old English README](README-EN.md)
 
+维护备考资料或运行离线检查，请参阅 [Swarm-ready 交接说明](SWARM_READY.md)。
+
 ## 关于
 这个项目里的文件是大多数我个人需要的GRE备考资料，我尝试用程序转制了大部分的文件，让它们看起来更干净、可读、Git(-LFS)友好。
 
